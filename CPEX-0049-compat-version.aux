@@ -1,0 +1,66 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Abstract}{3}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Motivation and Rationale}{3}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Problem Statement}{3}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Precedent: HDF5 Library Version Bounds}{3}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Detailed Description}{4}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Design Overview}{4}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}File Format Alternatives}{4}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:file-format-alts}{{3.2}{4}{File Format Alternatives}{subsection.3.2}{}}
+\newlabel{sec:format-alternatives}{{3.2}{4}{File Format Alternatives}{subsection.3.2}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Alternative A: Overload \texttt  {CGNSLibraryVersion\_t}}{4}{subsubsection.3.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}Alternative B: New \texttt  {CGNSMinRequiredVersion\_t} node (recommended)}{5}{subsubsection.3.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.3}Comparison}{6}{subsubsection.3.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.4}Alternative B: Node Placement---Root Sibling vs.\ Child of \texttt  {CGNSLibraryVersion\_t}}{6}{subsubsection.3.2.4}\protected@file@percent }
+\newlabel{sec:alt-b-placement}{{3.2.4}{6}{Alternative B: Node Placement---Root Sibling vs.\ Child of \texttt {CGNSLibraryVersion\_t}}{subsubsection.3.2.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Version Constants: \texttt  {CG\_LIBVER\_*}}{7}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:version-constants}{{3.3}{7}{Version Constants: \texttt {CG\_LIBVER\_*}}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}New MLL Functions}{7}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.1}Global Bounds via \texttt  {cg\_configure}}{7}{subsubsection.3.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.2}Library Version Bounds Functions}{8}{subsubsection.3.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.3}Parameter Object API}{9}{subsubsection.3.4.3}\protected@file@percent }
+\newlabel{sec:params-api}{{3.4.3}{9}{Parameter Object API}{subsubsection.3.4.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Design rationale: parameter object vs.\ extra arguments.}{10}{lstnumber.-8.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Known limitation: macro overloading.}{11}{lstnumber.-12.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Modified \texttt  {cg\_open} Behavior}{12}{subsection.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Write-Mode Version Selection}{13}{subsection.3.6}\protected@file@percent }
+\newlabel{sec:write-mode}{{3.6}{13}{Write-Mode Version Selection}{subsection.3.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Feature-Version Registry}{14}{subsection.3.7}\protected@file@percent }
+\newlabel{sec:feature-registry}{{3.7}{14}{Feature-Version Registry}{subsection.3.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Eliminating the $O(N)$ Feature Scan}{16}{subsection.3.8}\protected@file@percent }
+\newlabel{sec:feature-mask}{{3.8}{16}{Eliminating the $O(N)$ Feature Scan}{subsection.3.8}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.8.1}Specification}{16}{subsubsection.3.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.8.2}Open-time use}{17}{subsubsection.3.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.8.3}Maintenance}{17}{subsubsection.3.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.9}SIDS Impact}{18}{subsection.3.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.10}File Mapping Impact}{18}{subsection.3.10}\protected@file@percent }
+\newlabel{sec:file-mapping}{{3.10}{18}{File Mapping Impact}{subsection.3.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Backward Compatibility}{19}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Fortran Bindings}{19}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Examples}{20}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Example 1: Default Behavior (No API Call)}{20}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Example 2: Restricting to a Known-Compatible Range}{20}{subsection.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Example 3: Thread-Safe Per-File Configuration}{20}{subsection.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Example 4: Analyzing Minimum Required Version}{21}{subsection.6.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.5}Example 5: Using \texttt  {cg\_configure}}{21}{subsection.6.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.6}Example 6: Fortran Usage}{21}{subsection.6.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.7}Example 7: Detecting Incompatible Features}{21}{subsection.6.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Reference Implementation}{22}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Edge Cases and Limitations}{22}{section.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}External Links}{22}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Current behavior.}{22}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The HPC I/O storm concern.}{23}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Three architectural strategies for future resolution.}{23}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Which strategy is best?}{23}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Version Downgrades on Node Deletion}{24}{subsection.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Partial Parallel Writes and Version Agreement}{25}{subsection.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Open Questions}{25}{section.9}\protected@file@percent }
+\gdef \LT@i {\LT@entry 
+    {2}{169.62735pt}\LT@entry 
+    {1}{253.84842pt}}
+\@writefile{toc}{\contentsline {section}{\numberline {10}Summary of API Additions}{26}{section.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {11}References}{27}{section.11}\protected@file@percent }
+\gdef \@abspage@last{27}
