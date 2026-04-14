@@ -1,0 +1,36 @@
+CPEX-0049-compat-version.tex
+  c9c5fa44e36c5094 247,254,256-258,260-261,291,311,314,334,340,349,523,743-746,749-751,755,823-825,836,861-862,879,938-940,1045-1046,1048,1067,1122-1123,1127-1128,1194-1211,1216-1218,1220-1221,1243-1246,1620,1663-1664,1671,1761-1762
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "30e39a52650a2b47b91f8e0f6db08a24fe871453",
+  "prompts": {
+    "968feb9aa857527c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "265a48bd-91d3-4451-92cc-688bd577178f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "M. Scot Breitenfeld",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 3020,
+      "overriden_lines": 42
+    },
+    "c9c5fa44e36c5094": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2169fd68-e1d0-4e97-97f3-7156d2ba831f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "M. Scot Breitenfeld",
+      "messages": [],
+      "total_additions": 78,
+      "total_deletions": 215,
+      "accepted_lines": 75,
+      "overriden_lines": 0
+    }
+  }
+}
