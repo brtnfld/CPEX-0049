@@ -807,9 +807,26 @@ When a file is opened for reading (\texttt{CG\_MODE\_READ} or
 the following checks in order:
 
 \begin{enumerate}[leftmargin=2em]
-\item \textbf{Read} the \texttt{CGNSLibraryVersion\_t} node, which
-  records the library version that wrote the file, denoted
-  $V_{\mathrm{file}}$.
+\item \textbf{Read version metadata.}  Read the
+  \texttt{CGNSLibraryVersion\_t} node (present in all CGNS files).
+  Under Alternative~B, also read the
+  \texttt{CGNSMinRequiredVersion\_t} node if present.  Define the
+  \emph{effective file version} $V_{\mathrm{file}}$ as follows:
+  \begin{itemize}[leftmargin=1.5em]
+  \item If \texttt{CGNSMinRequiredVersion\_t} is present
+    (Alternative~B, CPEX-0049 file): $V_{\mathrm{file}}$ is the value
+    of that node---the minimum version required to read the file.
+  \item Otherwise (Alternative~A, or legacy file):
+    $V_{\mathrm{file}}$ is the value of
+    \texttt{CGNSLibraryVersion\_t}---the version of the library that
+    wrote the file.
+  \end{itemize}
+  This distinction is critical under Alternative~B because
+  \texttt{CGNSLibraryVersion\_t} always records the \emph{writing}
+  library version (which may be much higher than what the file
+  actually requires).  Using it directly for the checks below would
+  cause false rejections---exactly the problem this CPEX is designed
+  to solve.
 \item \textbf{Major version safety check.}  If the major version of
   $V_{\mathrm{file}}$ exceeds the major version of the running library
   ($\lfloor V_{\mathrm{file}} / 1000 \rfloor >
@@ -822,6 +839,9 @@ the following checks in order:
   file structure.  It is distinct from the feature compatibility check
   in Step~4, which operates on already-parsed in-memory structures and
   cannot substitute for this guard.
+  For legacy files that lack \texttt{CGNSMinRequiredVersion\_t},
+  $V_{\mathrm{file}}$ falls back to \texttt{CGNSLibraryVersion\_t},
+  which preserves the current library's existing behavior.
 \item \textbf{Read file structure} via \texttt{cgi\_read()}.
 \item \textbf{Enforce upper bound.}  If the user has set
   $V_{\mathrm{high}} < \texttt{CG\_LIBVER\_LATEST}$ and
