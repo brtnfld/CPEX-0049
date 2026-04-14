@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "bf2df7d2ccbed2934434f82cb7b3eeec2652f284",
+  "prompts": {
+    "968feb9aa857527c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "265a48bd-91d3-4451-92cc-688bd577178f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "M. Scot Breitenfeld",
+      "messages": [],
+      "total_additions": 3141,
+      "total_deletions": 4,
+      "accepted_lines": 3139,
+      "overriden_lines": 0
+    }
+  }
+}
