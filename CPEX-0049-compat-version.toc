@@ -13,37 +13,38 @@
 \contentsline {subsection}{\numberline {3.4}New MLL Functions}{7}{subsection.3.4}%
 \contentsline {subsubsection}{\numberline {3.4.1}Global Bounds via \texttt {cg\_configure}}{7}{subsubsection.3.4.1}%
 \contentsline {subsubsection}{\numberline {3.4.2}Library Version Bounds Functions}{8}{subsubsection.3.4.2}%
+\contentsline {paragraph}{Design alternative: separate \texttt {cg\_get\_min\_version} function.}{9}{lstnumber.-5.6}%
 \contentsline {subsubsection}{\numberline {3.4.3}Parameter Object API}{9}{subsubsection.3.4.3}%
 \contentsline {paragraph}{Design rationale: parameter object vs.\ extra arguments.}{10}{lstnumber.-8.5}%
-\contentsline {paragraph}{Known limitation: macro overloading.}{11}{lstnumber.-12.7}%
+\contentsline {paragraph}{Known limitation: macro overloading.}{12}{lstnumber.-12.7}%
 \contentsline {subsection}{\numberline {3.5}Modified \texttt {cg\_open} Behavior}{12}{subsection.3.5}%
 \contentsline {subsection}{\numberline {3.6}Write-Mode Version Selection}{13}{subsection.3.6}%
-\contentsline {subsection}{\numberline {3.7}Feature-Version Registry}{14}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.7}Feature-Version Registry}{15}{subsection.3.7}%
 \contentsline {subsection}{\numberline {3.8}Eliminating the $O(N)$ Feature Scan}{16}{subsection.3.8}%
-\contentsline {subsubsection}{\numberline {3.8.1}Specification}{16}{subsubsection.3.8.1}%
+\contentsline {subsubsection}{\numberline {3.8.1}Specification}{17}{subsubsection.3.8.1}%
 \contentsline {subsubsection}{\numberline {3.8.2}Open-time use}{17}{subsubsection.3.8.2}%
-\contentsline {subsubsection}{\numberline {3.8.3}Maintenance}{17}{subsubsection.3.8.3}%
-\contentsline {subsection}{\numberline {3.9}SIDS Impact}{18}{subsection.3.9}%
-\contentsline {subsection}{\numberline {3.10}File Mapping Impact}{18}{subsection.3.10}%
+\contentsline {subsubsection}{\numberline {3.8.3}Maintenance}{18}{subsubsection.3.8.3}%
+\contentsline {subsection}{\numberline {3.9}SIDS Impact}{19}{subsection.3.9}%
+\contentsline {subsection}{\numberline {3.10}File Mapping Impact}{19}{subsection.3.10}%
 \contentsline {section}{\numberline {4}Backward Compatibility}{19}{section.4}%
-\contentsline {section}{\numberline {5}Fortran Bindings}{19}{section.5}%
+\contentsline {section}{\numberline {5}Fortran Bindings}{20}{section.5}%
 \contentsline {section}{\numberline {6}Examples}{20}{section.6}%
 \contentsline {subsection}{\numberline {6.1}Example 1: Default Behavior (No API Call)}{20}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}Example 2: Restricting to a Known-Compatible Range}{20}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}Example 3: Thread-Safe Per-File Configuration}{20}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.2}Example 2: Restricting to a Known-Compatible Range}{21}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Example 3: Thread-Safe Per-File Configuration}{21}{subsection.6.3}%
 \contentsline {subsection}{\numberline {6.4}Example 4: Analyzing Minimum Required Version}{21}{subsection.6.4}%
 \contentsline {subsection}{\numberline {6.5}Example 5: Using \texttt {cg\_configure}}{21}{subsection.6.5}%
-\contentsline {subsection}{\numberline {6.6}Example 6: Fortran Usage}{21}{subsection.6.6}%
-\contentsline {subsection}{\numberline {6.7}Example 7: Detecting Incompatible Features}{21}{subsection.6.7}%
+\contentsline {subsection}{\numberline {6.6}Example 6: Fortran Usage}{22}{subsection.6.6}%
+\contentsline {subsection}{\numberline {6.7}Example 7: Detecting Incompatible Features}{22}{subsection.6.7}%
 \contentsline {section}{\numberline {7}Reference Implementation}{22}{section.7}%
-\contentsline {section}{\numberline {8}Edge Cases and Limitations}{22}{section.8}%
-\contentsline {subsection}{\numberline {8.1}External Links}{22}{subsection.8.1}%
-\contentsline {paragraph}{Current behavior.}{22}{subsection.8.1}%
+\contentsline {section}{\numberline {8}Edge Cases and Limitations}{23}{section.8}%
+\contentsline {subsection}{\numberline {8.1}External Links}{23}{subsection.8.1}%
+\contentsline {paragraph}{Current behavior.}{23}{subsection.8.1}%
 \contentsline {paragraph}{The HPC I/O storm concern.}{23}{subsection.8.1}%
 \contentsline {paragraph}{Three architectural strategies for future resolution.}{23}{subsection.8.1}%
-\contentsline {paragraph}{Which strategy is best?}{23}{subsection.8.1}%
-\contentsline {subsection}{\numberline {8.2}Version Downgrades on Node Deletion}{24}{subsection.8.2}%
-\contentsline {subsection}{\numberline {8.3}Partial Parallel Writes and Version Agreement}{25}{subsection.8.3}%
-\contentsline {section}{\numberline {9}Open Questions}{25}{section.9}%
-\contentsline {section}{\numberline {10}Summary of API Additions}{26}{section.10}%
-\contentsline {section}{\numberline {11}References}{27}{section.11}%
+\contentsline {paragraph}{Which strategy is best?}{24}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Version Downgrades on Node Deletion}{25}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Partial Parallel Writes and Version Agreement}{26}{subsection.8.3}%
+\contentsline {section}{\numberline {9}Open Questions}{26}{section.9}%
+\contentsline {section}{\numberline {10}Summary of API Additions}{27}{section.10}%
+\contentsline {section}{\numberline {11}References}{28}{section.11}%
