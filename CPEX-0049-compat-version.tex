@@ -563,12 +563,32 @@ pass \texttt{NULL} for \texttt{min\_version} and pay $O(1)$;
 applications that need the computed minimum version pay the scan cost
 exactly once.
 
+\paragraph{Design alternative: separate \texttt{cg\_get\_min\_version}
+function.}
+An alternative design would separate the \texttt{min\_version} query into
+its own dedicated function (e.g.,
+\texttt{cg\_get\_min\_version(int fn, int *min\_version)}), avoiding the
+risk that callers instinctively pass a non-\texttt{NULL} pointer for
+\texttt{min\_version} and unknowingly trigger the costly $O(N)$ feature
+scan.  A separate function makes the cost explicit: callers who never
+invoke it never pay.  Another option would be to return the minimum
+required version from \texttt{cg\_open} itself (via an additional output
+parameter that accepts \texttt{NULL} through macro manipulation), since
+the file's content is already parsed at that point.  The combined
+function was chosen to minimize the number of new API entry points, but
+a convenience wrapper \texttt{cg\_get\_min\_version} could be provided as
+a thin inline or macro forwarding to
+\texttt{cg\_get\_libver\_bounds(fn, NULL, NULL, min\_version)}.
+The committee should decide whether the combined interface is
+sufficiently clear or whether a separate function is preferred.
+
 \textbf{Behavior of \texttt{min\_version} in write mode.}
 When called on a file opened with \texttt{CG\_MODE\_WRITE} or
 \texttt{CG\_MODE\_MODIFY} before any nodes have been written (or
 after a node deletion), \texttt{min\_version} returns the current
-\emph{effective write version}: the library version that will be
-recorded in \texttt{CGNSLibraryVersion\_t} when the file is closed.
+\emph{effective write version}: the minimum required version that will be
+recorded in \texttt{CGNSMinRequiredVersion\_t} (Alternative~B) or
+\texttt{CGNSLibraryVersion\_t} (Alternative~A) when the file is closed.
 When \texttt{low} is \texttt{CG\_LIBVER\_AUTO}, this begins at
 \texttt{CG\_LIBVER\_EARLIEST} and increments as features are
 written; when \texttt{low} is an explicit constant, it returns at
@@ -680,10 +700,17 @@ cg_open_opts opts = {
 cg_open_ex(file, mode, &opts, &fn);
 \end{lstlisting}
 More discoverable---fields are visible in the struct definition---but
-not ABI-stable.  Adding a new field changes the struct layout for all
-callers, requiring either a versioned struct (with a \texttt{size}
-sentinel as used in POSIX's \texttt{struct addrinfo}) or a full API
-break.
+not ABI-stable when the struct is passed by value.  Adding a new field
+changes the struct layout for all callers, requiring either a versioned
+struct (with a \texttt{size} sentinel as used in POSIX's
+\texttt{struct addrinfo}) or a full API break.  Accepting a
+\emph{pointer} to the struct (rather than a copy) mitigates this: the
+function signature never changes when fields are added, and C99
+designated initializers (\texttt{.field = value}) provide zero-default
+safety for new members.  This pattern is common in modern C APIs
+(e.g., Vulkan's \texttt{VkInstanceCreateInfo}).  The trade-off is that
+the struct definition must remain in a public header, exposing
+implementation details that an opaque handle hides.
 
 \item \textbf{Variadic key--value pairs.}
 \begin{lstlisting}[language=C]
@@ -719,6 +746,18 @@ function signature or struct layout.  It also directly mirrors HDF5's
 File Access Property List pattern
 (\texttt{H5Pcreate}/\texttt{H5Pset\_*}/\texttt{H5Fopen}), which is
 already familiar to the scientific computing community.
+A trade-off of this approach is that the generic
+\texttt{cg\_params\_set(params, key, void~*value)} setter is not
+type-safe: all values are passed through \texttt{void~*}, relying on
+the caller to cast correctly.  By contrast, HDF5's property-list API
+uses dedicated typed setters (e.g.,
+\texttt{H5Pset\_libver\_bounds(fapl, low, high)}) that catch type
+errors at compile time.  Adding per-key typed setters
+(e.g., \texttt{cg\_params\_set\_libver\_low(params, int~value)}) would
+restore type safety at the cost of a larger API surface.  The generic
+setter was chosen here to match the existing \texttt{cg\_configure}
+pattern, but the committee may prefer typed accessors if the parameter
+set stabilizes.
 
 \end{enumerate}
 
@@ -793,6 +832,21 @@ the following checks in order:
   so it must reject rather than silently accept.  This step is
   skipped when $V_{\mathrm{high}} = \texttt{CG\_LIBVER\_LATEST}$
   (the default), allowing feature-aware acceptance in Step~5.
+
+  \textbf{Read-only leniency (open question).}  This strict enforcement
+  may be overly restrictive for \texttt{CG\_MODE\_READ} when the user
+  does not know in advance what version the file was written with.  A
+  user who sets \texttt{high} to restrict write output may not intend
+  to also reject readable files.  Two relaxation strategies are
+  possible: (a)~apply \texttt{high} only to write modes and always
+  allow feature-aware reads regardless of \texttt{high}, or (b)~issue
+  a \texttt{cgi\_warning} instead of \texttt{CG\_ERROR} for read-only
+  opens when $V_{\mathrm{file}} > V_{\mathrm{high}}$ but no
+  incompatible features are detected.  Option~(a) is simpler but means
+  \texttt{high} has no read-time effect; option~(b) preserves the
+  safety net while avoiding false rejections.  The committee should
+  decide whether the current strict behavior is appropriate for
+  read-only use cases.
 \item \textbf{Check feature compatibility.}  If
   $V_{\mathrm{file}} > V_{\mathrm{lib}}$, check the file's
   metadata for features introduced after the running library's
@@ -827,8 +881,9 @@ default-configured applications.
 \subsection{Write-Mode Version Selection}
 \label{sec:write-mode}
 
-The write version is the value recorded in the file's
-\texttt{CGNSLibraryVersion\_t} node.  It is governed by the lower
+The write version is the minimum required version recorded in the file's
+\texttt{CGNSMinRequiredVersion\_t} node (Alternative~B) or
+\texttt{CGNSLibraryVersion\_t} node (Alternative~A).  It is governed by the lower
 bound (\texttt{low}).  Two modes are supported:
 
 \begin{description}[leftmargin=2em]
@@ -853,8 +908,8 @@ bound (\texttt{low}).  Two modes are supported:
   readers that rely on the header to detect the new feature.  To guard
   against this, a CI test must write every known node type to a fresh
   file in AUTO mode and assert that the resulting
-  \texttt{CGNSLibraryVersion\_t} equals the expected minimum version
-  for that node type.
+  \texttt{CGNSMinRequiredVersion\_t} (Alternative~B) equals the
+  expected minimum version for that node type.
 
 \item[\texttt{low~=} explicit version constant.]
   Setting \texttt{low} (via \texttt{CG\_PARAM\_LIBVER\_LOW} or
@@ -1087,26 +1142,27 @@ generic tree-walking utilities (\texttt{cgnscheck},
 without encountering an undefined data type.  Although \texttt{I8} is
 signed, bit-level operations are well-defined in C for non-negative
 values, and the implementation should cast to \texttt{uint64\_t}
-internally for bitwise manipulation.  Each bit position is assigned
-via an explicit constant, not by array order:
+internally for bitwise manipulation.  Each feature is assigned an
+explicit power-of-two mask constant, making bitwise operations
+natural (e.g., \texttt{if~(mask~\&~(CGNS\_FEATURE\_EXTENDED\_ELEMENTS~|~CGNS\_FEATURE\_PARTICLE\_ZONE))}):
 
 \begin{lstlisting}[language=C]
-#define CGNS_FEATURE_BIT_EXTENDED_ELEMENTS     0
-#define CGNS_FEATURE_BIT_REORDERED_ELEMENTS    1
-#define CGNS_FEATURE_BIT_NGON_V32              2
-#define CGNS_FEATURE_BIT_ELEMENT_START_OFFSET  3
-#define CGNS_FEATURE_BIT_PARTICLE_ZONE         4
-#define CGNS_FEATURE_BIT_PARTICLE_COORDS       5
-#define CGNS_FEATURE_BIT_PARTICLE_SOLUTION     6
-#define CGNS_FEATURE_BIT_ELEMENT_INTERP        7
-#define CGNS_FEATURE_BIT_SOLUTION_INTERP       8
-#define CGNS_FEATURE_BIT_HIGH_ORDER_ELEMENTS   9
-#define CGNS_FEATURE_BIT_UNKNOWN_MODERN       10
+#define CGNS_FEATURE_EXTENDED_ELEMENTS     (1 <<  0)  /*   1 */
+#define CGNS_FEATURE_REORDERED_ELEMENTS    (1 <<  1)  /*   2 */
+#define CGNS_FEATURE_NGON_V32              (1 <<  2)  /*   4 */
+#define CGNS_FEATURE_ELEMENT_START_OFFSET  (1 <<  3)  /*   8 */
+#define CGNS_FEATURE_PARTICLE_ZONE         (1 <<  4)  /*  16 */
+#define CGNS_FEATURE_PARTICLE_COORDS       (1 <<  5)  /*  32 */
+#define CGNS_FEATURE_PARTICLE_SOLUTION     (1 <<  6)  /*  64 */
+#define CGNS_FEATURE_ELEMENT_INTERP        (1 <<  7)  /* 128 */
+#define CGNS_FEATURE_SOLUTION_INTERP       (1 <<  8)  /* 256 */
+#define CGNS_FEATURE_HIGH_ORDER_ELEMENTS   (1 <<  9)  /* 512 */
+#define CGNS_FEATURE_UNKNOWN_MODERN        (1 << 10)  /*1024 */
 \end{lstlisting}
 
 A set bit indicates the corresponding feature is present in the file.
-Bit assignments are permanent: once assigned to a feature, a bit
-position must never be reused, even if the feature is deprecated.
+Mask assignments are permanent: once a bit position is assigned to a
+feature, it must never be reused, even if the feature is deprecated.
 Using explicit constants (rather than implicit array ordering) ensures
 that source-code refactoring of the registry table cannot silently
 change bit assignments and break backward compatibility.
@@ -1121,7 +1177,7 @@ maintaining backward compatibility.
 
 Future CPEXs that introduce version-breaking features must allocate
 the next available bit position and add the corresponding
-\texttt{CGNS\_FEATURE\_BIT\_*} constant.  Retired entries should be
+\texttt{CGNS\_FEATURE\_*} mask constant.  Retired entries should be
 marked as reserved in the source.
 
 \subsubsection{Open-time use}
@@ -1672,6 +1728,28 @@ close, which is prohibitively expensive.  The current behavior is
 therefore conservative: the version header may over-state the minimum
 required version after deletions, but it will never under-state it.
 
+\textbf{Possible close-time downgrade (open question).}  An
+alternative approach is to track feature usage \emph{decrementally}
+during modification: when a node is deleted, the library could check
+whether that node was the sole contributor to the current minimum
+version.  If the in-memory feature mask indicates that all remaining
+features are satisfied by a lower version, the library could
+downgrade \texttt{CGNSMinRequiredVersion\_t} at close time.
+Specifically, during the operations described in
+Section~\ref{sec:write-mode}, the library already maintains the
+in-memory \texttt{current\_feature\_mask}.  On node deletion, the
+corresponding feature bit could be cleared and the minimum version
+recomputed from the remaining bits---an $O(1)$ operation against the
+registry.  If the recomputed minimum is lower than what is currently
+recorded, the file would be downgraded on close.  The cost of this
+approach is modest: each delete path must identify which feature bit
+to clear, and the registry must support reverse lookup from feature
+to bit.  The committee should consider whether this automatic
+downgrade is worth the added complexity, or whether the conservative
+over-statement is acceptable given that users can always force a
+rescan by opening in \texttt{CG\_MODE\_MODIFY} and closing
+immediately.
+
 \textbf{Impact of Alternative~B.}  Under Alternative~B, this
 limitation is less severe.  The over-stated version resides in
 \texttt{CGNSMinRequiredVersion\_t}, while
@@ -1796,7 +1874,7 @@ collective failure requiring abort or coordinated recovery.
 \texttt{CG\_CONFIG\_LIBVER\_HIGH}      & \texttt{cg\_configure} token: set global upper bound. \\
 \texttt{CG\_CONFIG\_GET\_LIBVER\_LOW}  & \texttt{cg\_configure} token: query global lower bound. \\
 \texttt{CG\_CONFIG\_GET\_LIBVER\_HIGH} & \texttt{cg\_configure} token: query global upper bound. \\
-\texttt{CGNS\_FEATURE\_BIT\_*}  & Explicit bit-position constants for \texttt{\_CGNS\_FeatureMask} (0--10). \\
+\texttt{CGNS\_FEATURE\_*}  & Power-of-two mask constants for \texttt{\_CGNS\_FeatureMask} (bits 0--10). \\
 \texttt{CG\_PARAM\_KEY}         & Enum of parameter keys (100--103). \\
 \texttt{cg\_parameters\_t}      & Opaque parameter object type. \\
 \texttt{CG\_PARAMS\_DEFAULT}    & NULL sentinel: use global configuration. \\
