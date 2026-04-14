@@ -244,56 +244,21 @@ Mid-Level Library:
   actually written.
 \end{enumerate}
 
-\subsection{File Format Alternatives}
+\subsection{File Format: New \texttt{CGNSMinRequiredVersion\_t} Node}
 \label{sec:file-format-alts}
 \label{sec:format-alternatives}
 
 This CPEX must record two pieces of information that do not currently
 exist in the file: (a)~the minimum CGNS version required to read the
 file, and (b)~a diagnostic bitmask indicating which version-specific
-features are present.  Two file-format approaches are presented below.
-\textbf{Alternative~B is strongly recommended} because it preserves
+features are present.
+
+The adopted design introduces a new
+\texttt{CGNSMinRequiredVersion\_t} node while leaving
+\texttt{CGNSLibraryVersion\_t} entirely unchanged.  This preserves
 data provenance---a fundamental requirement for CFD archival
-formats.  Alternative~A is included for completeness so the committee
-can evaluate both approaches, but its semantic overloading of
-\texttt{CGNSLibraryVersion\_t} makes it unsuitable for production use.
-
-\subsubsection{Alternative A: Overload \texttt{CGNSLibraryVersion\_t}}
-
-Under this approach, no new nodes are introduced.  Instead, the
-existing \texttt{CGNSLibraryVersion\_t} node is redefined:
-
-\begin{itemize}[leftmargin=2em]
-\item When the library automatically determines the minimum version
-  needed (see Section~\ref{sec:write-mode}), it stamps
-  \texttt{CGNSLibraryVersion\_t} with the \emph{minimum required
-  version} instead of the writing library's version.  A file written
-  by CGNS 5.0 that uses only V3.2 features will carry
-  \texttt{CGNSLibraryVersion\_t = 3200}.
-\item A hidden diagnostic bitmask attribute
-  (\texttt{\_CGNS\_FeatureMask}, described in
-  Section~\ref{sec:feature-mask}) is stored on
-  \texttt{CGNSLibraryVersion\_t}.
-\item The SIDS must redefine the node's semantics from ``the library
-  that created this file'' to ``the minimum library required to read
-  it.''
-\end{itemize}
-
-\textbf{Advantages:}  No new nodes; no file-mapping additions beyond
-one hidden attribute; maximum structural simplicity.
-
-\textbf{Disadvantages:}  Provenance information (which library wrote
-the file) is lost when automatic versioning is used; requires a
-semantic redefinition of a long-established SIDS node; tools or
-workflows that depend on \texttt{CGNSLibraryVersion\_t} for
-debugging, auditing, or compliance will break.  Additionally, when an
-older file is opened and the AUTO write mode determines a minimum
-version lower than what \texttt{CGNSLibraryVersion\_t} currently
-records, the node value would be silently overwritten---modifying the
-file's metadata without any user action or awareness.
-
-\subsubsection{Alternative B: New \texttt{CGNSMinRequiredVersion\_t}
-  node (recommended)}
+formats---and avoids redefining the semantics of any established SIDS
+node.
 
 Under this approach, \texttt{CGNSLibraryVersion\_t} retains its
 original meaning and a new sibling node is introduced:
@@ -323,7 +288,7 @@ Section~\ref{sec:feature-mask}) is placed on this new node.
   convention for unknown nodes).
 \end{itemize}
 
-\textbf{Advantages:}
+\textbf{Key properties of this design:}
 \begin{itemize}[leftmargin=2em]
 \item No semantic redefinition of any existing SIDS node;
   \texttt{CGNSLibraryVersion\_t} is entirely unchanged in both
@@ -337,45 +302,16 @@ Section~\ref{sec:feature-mask}) is placed on this new node.
   mechanism.
 \item Debugging and compliance workflows continue to work---the
   question ``which library wrote this?'' has a definitive answer.
-\end{itemize}
-
-\textbf{Disadvantages:}
-\begin{itemize}[leftmargin=2em]
 \item Requires a SIDS addition (new node type) and a corresponding
   file-mapping update; in particular, the root-node schema in
   SIDS Section~2 must be formally amended.
 \item Introduces one additional small node per file.
 \end{itemize}
 
-\subsubsection{Comparison}
-
-\begin{center}
-\rowcolors{2}{cgnslight!30}{white}
-\begin{tabular}{l c c}
-\toprule
-\rowcolor{cgnsblue!15}
- & \textbf{Alt.\ A (overload)} & \textbf{Alt.\ B (new node)} \\
-\midrule
-New SIDS nodes                  & 0                  & 1 \\
-SIDS semantic changes           & 1 (redefinition)   & 0 \\
-Provenance preserved            & $\times$           & \checkmark \\
-MODIFY-mode logic               & Special case       & Existing behavior \\
-Old library reads new file      & Works              & Works (ignores new node) \\
-New library reads old file      & Falls back to scan & Falls back to scan \\
-Hidden attributes               & 1                  & 1 (on new node) \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Alternative~B is recommended.  Adding a new SIDS node is less
-disruptive than redefining the semantics of an established one,
-and preserving provenance is valuable for the long-lived CFD files
-that are the primary motivation for this CPEX.
-
-\subsubsection{Alternative B: Node Placement---Root Sibling vs.\ Child of \texttt{CGNSLibraryVersion\_t}}
+\subsubsection{Node Placement---Root Sibling vs.\ Child of \texttt{CGNSLibraryVersion\_t}}
 \label{sec:alt-b-placement}
 
-Within Alternative~B, a secondary design question arises: should
+A secondary design question arises: should
 \texttt{CGNSMinRequiredVersion\_t} be placed as a \emph{sibling} of
 \texttt{CGNSLibraryVersion\_t} at the file root, or as a
 \emph{child} of \texttt{CGNSLibraryVersion\_t}?
@@ -395,14 +331,13 @@ Within Alternative~B, a secondary design question arises: should
 \begin{itemize}[leftmargin=2em]
 \item \texttt{CGNSLibraryVersion\_t} is no longer structurally
   unchanged---its SIDS definition must be amended to allow an
-  optional child, negating one of Alt.~B's stated advantages over
-  Alt.~A.
+  optional child, negating a key advantage of this design.
 \item \texttt{CGNSLibraryVersion\_t} is currently defined as a
   scalar leaf node; promoting it to a container changes its
   character in the SIDS type system.
 \end{itemize}
 
-\textbf{Root sibling (recommended)}
+\textbf{Root sibling (adopted)}
 
 \textit{Advantages:}
 \begin{itemize}[leftmargin=2em]
@@ -411,7 +346,7 @@ Within Alternative~B, a secondary design question arises: should
   version~$Y$'' (\texttt{CGNSMinRequiredVersion\_t}) are independent
   facts that need not be physically nested.
 \item \texttt{CGNSLibraryVersion\_t} is truly unchanged in both
-  semantics and structure, preserving Alt.~B's core advantage.
+  semantics and structure, preserving the core advantage of this design.
 \item Consistent with all existing root-level CGNS metadata nodes,
   which are siblings rather than children of one another.
 \item The root-schema amendment (SIDS Section~2) is no more invasive
@@ -585,8 +520,7 @@ When called on a file opened with \texttt{CG\_MODE\_WRITE} or
 \texttt{CG\_MODE\_MODIFY} before any nodes have been written (or
 after a node deletion), \texttt{min\_version} returns the current
 \emph{effective write version}: the minimum required version that will be
-recorded in \texttt{CGNSMinRequiredVersion\_t} (Alternative~B) or
-\texttt{CGNSLibraryVersion\_t} (Alternative~A) when the file is closed.
+recorded in \texttt{CGNSMinRequiredVersion\_t} when the file is closed.
 When \texttt{low} is \texttt{CG\_LIBVER\_AUTO}, this begins at
 \texttt{CG\_LIBVER\_EARLIEST} and increments as features are
 written; when \texttt{low} is an explicit constant, it returns at
@@ -806,20 +740,19 @@ the following checks in order:
 
 \begin{enumerate}[leftmargin=2em]
 \item \textbf{Read version metadata.}  Read the
-  \texttt{CGNSLibraryVersion\_t} node (present in all CGNS files).
-  Under Alternative~B, also read the
-  \texttt{CGNSMinRequiredVersion\_t} node if present.  Define the
-  \emph{effective file version} $V_{\mathrm{file}}$ as follows:
+  \texttt{CGNSLibraryVersion\_t} node (present in all CGNS files)
+  and the \texttt{CGNSMinRequiredVersion\_t} node if present.
+  Define the \emph{effective file version} $V_{\mathrm{file}}$ as
+  follows:
   \begin{itemize}[leftmargin=1.5em]
   \item If \texttt{CGNSMinRequiredVersion\_t} is present
-    (Alternative~B, CPEX-0049 file): $V_{\mathrm{file}}$ is the value
-    of that node---the minimum version required to read the file.
-  \item Otherwise (Alternative~A, or legacy file):
-    $V_{\mathrm{file}}$ is the value of
+    (CPEX-0049 file): $V_{\mathrm{file}}$ is the value of that
+    node---the minimum version required to read the file.
+  \item Otherwise (legacy file): $V_{\mathrm{file}}$ is the value of
     \texttt{CGNSLibraryVersion\_t}---the version of the library that
     wrote the file.
   \end{itemize}
-  This distinction is critical under Alternative~B because
+  This distinction is critical because
   \texttt{CGNSLibraryVersion\_t} always records the \emph{writing}
   library version (which may be much higher than what the file
   actually requires).  Using it directly for the checks below would
@@ -887,9 +820,9 @@ versions.  Older files are always readable regardless of the
 
 \textbf{Performance note.}  For files written by a CPEX-0049-aware
 library, Step~5 is resolved in $O(1)$ using the
-\texttt{CGNSMinRequiredVersion\_t} node or \texttt{\_CGNS\_FeatureMask}
-attribute (see Sections~\ref{sec:format-alternatives}
-and~\ref{sec:feature-mask}).  The $O(N_{\mathrm{zones}} \times
+\texttt{CGNSMinRequiredVersion\_t} node and the
+\texttt{\_CGNS\_FeatureMask} attribute (see
+Sections~\ref{sec:format-alternatives} and~\ref{sec:feature-mask}).  The $O(N_{\mathrm{zones}} \times
 N_{\mathrm{sections}})$ feature scan is only required as a fallback
 for legacy files that lack these metadata.  Even then, the scan is
 skipped when $V_{\mathrm{high}} \geq \texttt{CG\_LIBVER\_LATEST}$
@@ -900,8 +833,7 @@ default-configured applications.
 \label{sec:write-mode}
 
 The write version is the minimum required version recorded in the file's
-\texttt{CGNSMinRequiredVersion\_t} node (Alternative~B) or
-\texttt{CGNSLibraryVersion\_t} node (Alternative~A).  It is governed by the lower
+\texttt{CGNSMinRequiredVersion\_t} node.  It is governed by the lower
 bound (\texttt{low}).  Two modes are supported:
 
 \begin{description}[leftmargin=2em]
@@ -926,8 +858,8 @@ bound (\texttt{low}).  Two modes are supported:
   readers that rely on the header to detect the new feature.  To guard
   against this, a CI test must write every known node type to a fresh
   file in AUTO mode and assert that the resulting
-  \texttt{CGNSMinRequiredVersion\_t} (Alternative~B) equals the
-  expected minimum version for that node type.
+  \texttt{CGNSMinRequiredVersion\_t} equals the expected minimum
+  version for that node type.
 
 \item[\texttt{low~=} explicit version constant.]
   Setting \texttt{low} (via \texttt{CG\_PARAM\_LIBVER\_LOW} or
@@ -944,7 +876,7 @@ bound (\texttt{low}).  Two modes are supported:
     the current library version $V_{\mathrm{lib}}$, regardless of the
     \texttt{low} setting.  This preserves its SIDS semantics: ``the
     version of the library that last wrote the file.''
-  \item \texttt{CGNSMinRequiredVersion\_t} (Alternative~B) uses the
+  \item \texttt{CGNSMinRequiredVersion\_t} uses the
     AUTO incremental-upgrade mechanism: the effective version is
     initialized to the existing node's value (or the result of the
     fallback feature scan for legacy files) and only increases as new
@@ -1003,10 +935,9 @@ MPI_Allreduce(MPI_IN_PLACE, &current_feature_mask, 1,
   ranks produce the same result because they operate on identical
   input.
 \item The derived effective version and merged bitmask are written to
-  \texttt{CGNSMinRequiredVersion\_t}
-  (Alternative~B), \texttt{CGNSLibraryVersion\_t} (always the current
-  library version), and \texttt{\_CGNS\_FeatureMask}, and the file is
-  closed normally.
+  \texttt{CGNSMinRequiredVersion\_t},
+  \texttt{CGNSLibraryVersion\_t} (always the current library version),
+  and \texttt{\_CGNS\_FeatureMask}, and the file is closed normally.
 \end{enumerate}
 
 If an application sets an explicit \texttt{low} bound instead of
@@ -1111,10 +1042,10 @@ The $O(N_{\mathrm{zones}} \times N_{\mathrm{sections}})$ feature scan
 is unacceptable for production HPC files, which routinely contain
 100\,000 or more unstructured blocks.
 
-Under Alternative~B (Section~\ref{sec:format-alternatives}), the
-\texttt{CGNSMinRequiredVersion\_t} node already eliminates this cost
+The \texttt{CGNSMinRequiredVersion\_t} node
+(Section~\ref{sec:format-alternatives}) already eliminates this cost
 for the primary use case: the open-time compatibility check reads a
-single integer from the new node and compares it against the
+single integer from the node and compares it against the
 configured compatibility version in $O(1)$.  \textbf{No feature scan is required}
 when the node is present.  The $O(N)$ scan is only needed as a
 fallback for legacy files that lack the node.
@@ -1127,20 +1058,13 @@ precise error messages (e.g., ``file requires CGNS $\geq$ 4.5 for
 therefore specified as a recommended attribute, not a strict
 requirement for the $O(1)$ check.
 
-Under Alternative~A, where there is no
-\texttt{CGNSMinRequiredVersion\_t} node, the feature mask is the
-\emph{only} $O(1)$ mechanism and is therefore a core requirement.
-
 The reference implementation does not yet include this attribute; it
 should be added before the CPEX is finalized.
 
 \subsubsection{Specification}
 
 When a CPEX-0049-aware library closes a writable file, it writes a
-hidden attribute named \texttt{\_CGNS\_FeatureMask}.  Under
-Alternative~A (Section~\ref{sec:format-alternatives}), the attribute
-is placed on the existing \texttt{CGNSLibraryVersion\_t} node; under
-Alternative~B (recommended), it is placed on the new
+hidden attribute named \texttt{\_CGNS\_FeatureMask} on the
 \texttt{CGNSMinRequiredVersion\_t} node.  The attribute is stored as a
 \textbf{signed 64-bit integer} (\texttt{I8} in SIDS
 \texttt{DataType\_t} terms).  In the HDF5 backend this maps to
@@ -1195,16 +1119,13 @@ On \texttt{cg\_open()}, compatibility checking proceeds as follows:
 
 \begin{enumerate}[leftmargin=2em]
 \item \textbf{\texttt{CGNSMinRequiredVersion\_t} present}
-  (Alternative~B, CPEX-0049 file): read the node value in $O(1)$
-  and compare against the configured compatibility version.  If the file is
+  (CPEX-0049 file): read the node value in $O(1)$ and compare
+  against the configured compatibility version.  If the file is
   rejected and \texttt{\_CGNS\_FeatureMask} is also present, use
   the bitmask to identify the specific incompatible feature for the
   error message.  No tree walk is performed in either case.
-\item \textbf{\texttt{\_CGNS\_FeatureMask} only}
-  (Alternative~A, CPEX-0049 file): read the bitmask in $O(1)$
-  and determine the minimum required version by finding the
-  highest-version bit that is set.  No tree walk.
-\item \textbf{Neither present} (legacy file):
+\item \textbf{Neither \texttt{CGNSMinRequiredVersion\_t} nor
+  \texttt{\_CGNS\_FeatureMask} present} (legacy file):
   fall back to the $O(N)$ tree walk.  This ensures full backward
   compatibility with all pre-CPEX-0049 files.
 \end{enumerate}
@@ -1270,52 +1191,34 @@ readers without any explicit user action.
 
 \subsection{SIDS Impact}
 
-The impact depends on the file-format alternative selected:
+One new node type, \texttt{CGNSMinRequiredVersion\_t}, is added to
+the SIDS as a child of the root (same level as
+\texttt{CGNSLibraryVersion\_t}).  The definition of
+\texttt{CGNSLibraryVersion\_t} is \textbf{unchanged}.
 
-\begin{description}[leftmargin=2em]
-\item[Alternative A.]  The SIDS definition of
-  \texttt{CGNSLibraryVersion\_t} must be amended from ``the version
-  of the library that created the file'' to ``the minimum library
-  version required to read the file.''  The existing node structure
-  is unchanged.
+\medskip
+\noindent\fcolorbox{cgnsgold}{cgnsgold!10}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
+\textbf{SIDS amendment required.}  The SIDS root-node schema
+(Section~2 of the SIDS document) strictly defines the allowed
+children.  This addition requires a \textbf{formal amendment to
+SIDS Section~2} adding \texttt{CGNSMinRequiredVersion\_t} to the
+root-level node list.  A corresponding file-mapping update
+(Section~\ref{sec:file-mapping}) must also be published.}}
+\medskip
 
-\item[Alternative B (recommended).]  One new node type,
-  \texttt{CGNSMinRequiredVersion\_t}, is added to the SIDS as a
-  child of the root (same level as
-  \texttt{CGNSLibraryVersion\_t}).  The definition of
-  \texttt{CGNSLibraryVersion\_t} is \textbf{unchanged}.
-
-  \medskip
-  \noindent\fcolorbox{cgnsgold}{cgnsgold!10}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
-  \textbf{SIDS amendment required.}  The SIDS root-node schema
-  (Section~2 of the SIDS document) strictly defines the allowed
-  children.  This addition requires a \textbf{formal amendment to
-  SIDS Section~2} adding \texttt{CGNSMinRequiredVersion\_t} to the
-  root-level node list.  A corresponding file-mapping update
-  (Section~\ref{sec:file-mapping}) must also be published.}}
-  \medskip
-\end{description}
-
-Under both alternatives, the \texttt{\_CGNS\_FeatureMask} attribute
-must be documented in the SIDS file mapping as a hidden \texttt{I8}
-attribute.
+The \texttt{\_CGNS\_FeatureMask} attribute must be documented in the
+SIDS file mapping as a hidden \texttt{I8} attribute on the
+\texttt{CGNSMinRequiredVersion\_t} node.
 
 \subsection{File Mapping Impact}
 \label{sec:file-mapping}
 
-\begin{description}[leftmargin=2em]
-\item[Alternative A.]  One hidden attribute
-  (\texttt{\_CGNS\_FeatureMask}) is added to the existing
-  \texttt{CGNSLibraryVersion\_t} node.  No new nodes.
+One new node (\texttt{CGNSMinRequiredVersion\_t}) is added at the
+root level.  The \texttt{\_CGNS\_FeatureMask} attribute is placed on
+this new node.  \texttt{CGNSLibraryVersion\_t} is unchanged.
 
-\item[Alternative B (recommended).]  One new node
-  (\texttt{CGNSMinRequiredVersion\_t}) is added at the root level.
-  The \texttt{\_CGNS\_FeatureMask} attribute is placed on this new
-  node.  \texttt{CGNSLibraryVersion\_t} is unchanged.
-\end{description}
-
-Under both alternatives, implementations that do not recognize the
-new node or attribute must silently ignore them.
+Implementations that do not recognize the new node or attribute must
+silently ignore them.
 
 %% ═════════════════════════════════════════════════════════════════════════
 \section{Backward Compatibility}
@@ -1337,12 +1240,10 @@ new node or attribute must silently ignore them.
   \emph{newer} library version that use no incompatible features will
   now be accepted instead of rejected.
 \item \textbf{File format additions} (see
-  Section~\ref{sec:format-alternatives}): Under Alternative~A, the
-  SIDS definition of \texttt{CGNSLibraryVersion\_t} is amended and
-  one hidden attribute is added.  Under Alternative~B (recommended),
-  one new node (\texttt{CGNSMinRequiredVersion\_t}) is added and
-  \texttt{CGNSLibraryVersion\_t} is unchanged.  In both cases, old
-  libraries silently ignore what they do not recognize.
+  Section~\ref{sec:format-alternatives}): One new node
+  (\texttt{CGNSMinRequiredVersion\_t}) is added at the root level
+  and \texttt{CGNSLibraryVersion\_t} is unchanged.  Old libraries
+  silently ignore the new node.
 \end{itemize}
 
 %% ═════════════════════════════════════════════════════════════════════════
@@ -1716,7 +1617,7 @@ and must be documented clearly in the MLL reference manual.  Users
 who modify external files after linking should reopen the parent file
 in \texttt{CG\_MODE\_MODIFY} and close it immediately; this
 recomputes the version header and \texttt{\_CGNS\_FeatureMask}
-attribute.  Under Alternative~B this workaround is straightforward:
+attribute.  This workaround is straightforward:
 only \texttt{CGNSMinRequiredVersion\_t} is updated, while
 \texttt{CGNSLibraryVersion\_t} simply records the current library
 version---provenance is preserved throughout.
@@ -1759,17 +1660,15 @@ over-statement is acceptable given that users can always force a
 rescan by opening in \texttt{CG\_MODE\_MODIFY} and closing
 immediately.
 
-\textbf{Impact of Alternative~B.}  Under Alternative~B, this
-limitation is less severe.  The over-stated version resides in
-\texttt{CGNSMinRequiredVersion\_t}, while
+\textbf{Consequence of over-statement.}  The over-stated version
+resides in \texttt{CGNSMinRequiredVersion\_t}, while
 \texttt{CGNSLibraryVersion\_t} continues to report the true writing
 library version.  Provenance is preserved, and tools that rely on
 ``which library wrote this file?'' remain correct.  The only
 consequence is that an older reader that \emph{could} read the file
 (because the deleted feature is gone) will be incorrectly told it
 cannot---a conservative false rejection, not a silent
-misinterpretation.  Under Alternative~A, the same over-statement
-would also lose provenance information, compounding the problem.
+misinterpretation.
 
 \subsection{Partial Parallel Writes and Version Agreement}
 
@@ -1799,42 +1698,6 @@ collective failure requiring abort or coordinated recovery.
 %% ═════════════════════════════════════════════════════════════════════════
 
 \begin{enumerate}[leftmargin=2em]
-
-\item \textbf{Alternative A vs.\ Alternative B.}
-  This proposal recommends Alternative~B (new
-  \texttt{CGNSMinRequiredVersion\_t} node) over Alternative~A
-  (overload \texttt{CGNSLibraryVersion\_t}).  The CGNS committee
-  must decide which alternative to adopt before the implementation
-  is merged.
-
-  \textit{Arguments for Alternative~A:} no new SIDS nodes, no
-  file-mapping additions beyond one hidden attribute, maximum
-  structural simplicity.
-
-  \textit{Arguments for Alternative~B:} preserves provenance
-  (\texttt{CGNSLibraryVersion\_t} continues to record the writing
-  library version), no semantic redefinition of an established SIDS
-  node, and cleaner MODIFY-mode logic.
-
-  See Section~\ref{sec:file-format-alts} for the full comparison.
-
-\item \textbf{Alternative B node placement: root sibling vs.\
-  child of \texttt{CGNSLibraryVersion\_t}.}
-  If Alternative~B is adopted, the committee must decide whether
-  \texttt{CGNSMinRequiredVersion\_t} is placed at the file root
-  (sibling of \texttt{CGNSLibraryVersion\_t}) or as a child of
-  \texttt{CGNSLibraryVersion\_t}.
-
-  \textit{Arguments for child placement:} all version metadata
-  co-located under one existing node; root namespace does not grow.
-
-  \textit{Arguments for root sibling (recommended):} clean semantic
-  separation between ``written by'' and ``requires at least'';
-  \texttt{CGNSLibraryVersion\_t} remains structurally unchanged,
-  preserving Alt.~B's core advantage; consistent with existing
-  root-level CGNS metadata nodes.
-
-  See Section~\ref{sec:alt-b-placement} for the full comparison.
 
 \item \textbf{Polymorphic \texttt{cg\_open}: variadic macro vs.\
   explicit 4-argument API.}
@@ -1895,8 +1758,8 @@ collective failure requiring abort or coordinated recovery.
 \texttt{cg\_open\_with\_params} & Open file with explicit parameter object (standard name). \\
 \texttt{CGNS\_NO\_MACROS}      & Preprocessor guard: when defined, suppresses the polymorphic \texttt{cg\_open} macro so \texttt{cg\_open} resolves to the real 3-argument function. \\
 \texttt{cg\_open} (macro)       & Polymorphic: 3-arg (legacy) or 4-arg (with params); suppressed by \texttt{\#define CGNS\_NO\_MACROS}. \\
-\texttt{CGNSMinRequiredVersion\_t} & \emph{Alt.~B:} new SIDS node recording the minimum CGNS version required to read the file.  Preserves \texttt{CGNSLibraryVersion\_t} semantics. \\
-\texttt{\_CGNS\_FeatureMask}   & Hidden \texttt{I8} attribute (HDF5: \texttt{H5T\_NATIVE\_INT64}; ADF: \texttt{I8}): bitmask of features present; enables $O(1)$ version check on open. Placed on \texttt{CGNSMinRequiredVersion\_t} (Alt.~B) or \texttt{CGNSLibraryVersion\_t} (Alt.~A). \\
+\texttt{CGNSMinRequiredVersion\_t} & New SIDS node recording the minimum CGNS version required to read the file.  Preserves \texttt{CGNSLibraryVersion\_t} semantics. \\
+\texttt{\_CGNS\_FeatureMask}   & Hidden \texttt{I8} attribute (HDF5: \texttt{H5T\_NATIVE\_INT64}; ADF: \texttt{I8}): bitmask of features present; enables $O(1)$ version check on open. Placed on \texttt{CGNSMinRequiredVersion\_t}. \\
 \texttt{cg\_set\_libver\_bounds\_f} & Fortran: set per-file version bounds (\texttt{fn}, \texttt{low}, \texttt{high}). \\
 \texttt{cg\_get\_libver\_bounds\_f} & Fortran: query per-file bounds and (optionally) minimum required version.  \texttt{min\_version} is an \texttt{OPTIONAL} dummy argument (F2003); when absent, \texttt{C\_NULL\_PTR} is passed to the C layer, skipping the $O(N)$ scan. \\
 \texttt{cg\_open\_params\_f}    & Fortran: 4-argument open with params. \\
