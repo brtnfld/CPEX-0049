@@ -961,10 +961,14 @@ version.  Because the \texttt{CGNSLibraryVersion} node is a single
 shared object, all ranks must agree on its final value.
 
 The recommended approach is \emph{sync-at-close}: during
-\texttt{cgp\_close}, the library performs an
-\texttt{MPI\_Allreduce(MPI\_MAX)} on each rank's locally tracked
-effective version before writing the version node and closing the
-file.
+\texttt{cgp\_close}, the library reduces the feature mask across all
+ranks using a standard \texttt{MPI\_Allreduce} with bitwise-OR, then
+each rank independently derives the effective version from the
+synchronized mask.  Because the effective version is a deterministic
+function of the feature mask (plus the configured lower bound), only
+the mask needs to be communicated---reducing a single
+\texttt{int64\_t} with a built-in MPI operation.  No custom
+\texttt{MPI\_Op} is required.
 
 \textbf{Note: this \texttt{MPI\_Allreduce} is new.}  In the current
 implementation, \texttt{cgp\_close} is a one-line wrapper that simply
@@ -984,39 +988,26 @@ The sequence for parallel AUTO mode is:
   \texttt{low~=~CG\_LIBVER\_AUTO}.  The effective version starts at
   \texttt{CG\_LIBVER\_EARLIEST}.
 \item As each rank writes features, \texttt{cgi\_require\_version()}
-  bumps that rank's effective version locally---no file metadata is
-  written and no error is returned.
+  updates that rank's local feature mask via bitwise-OR---no file
+  metadata is written and no error is returned.
 \item At \texttt{cgp\_close} time, before flushing metadata, the
-  library performs a single collective reduction using a custom
-  \texttt{MPI\_Op}.  Both values are packed into a two-element
-  \texttt{int64\_t} buffer and reduced in one call:
+  library performs a single collective reduction on the feature mask
+  using the standard \texttt{MPI\_BOR} operation:
 \begin{lstlisting}[language=C]
-int64_t buf[2] = { effective_version, current_feature_mask };
-MPI_Allreduce(MPI_IN_PLACE, buf, 2, MPI_INT64_T,
-              cgp_version_mask_op, comm);
-effective_version    = buf[0];
-current_feature_mask = buf[1];
+MPI_Allreduce(MPI_IN_PLACE, &current_feature_mask, 1,
+              MPI_INT64_T, MPI_BOR, comm);
 \end{lstlisting}
-  The custom operator \texttt{cgp\_version\_mask\_op} applies
-  \texttt{MAX} to element~0 (version) and bitwise-\texttt{OR} to
-  element~1 (mask):
-\begin{lstlisting}[language=C]
-static void cgp_version_mask_reduce(
-        void *in, void *inout, int *len, MPI_Datatype *dt)
-{
-    int64_t *a = (int64_t *)in;
-    int64_t *b = (int64_t *)inout;
-    for (int i = 0; i < *len; i += 2) {
-        b[i]   = a[i]   > b[i] ? a[i] : b[i]; /* MAX: version */
-        b[i+1] = a[i+1] | b[i+1];              /* OR:  mask   */
-    }
-}
-\end{lstlisting}
-  This operator is registered once at library initialisation via
-  \texttt{MPI\_Op\_create}.
-\item The collective maximum version and merged bitmask are written to
-  \texttt{CGNSLibraryVersion\_t}, \texttt{CGNSMinRequiredVersion\_t}
-  (Alternative~B), and \texttt{\_CGNS\_FeatureMask}, and the file is
+  After the reduction, every rank holds the union of all features
+  written across all ranks.  Each rank then derives the effective
+  version locally by scanning the registry for the highest-version
+  feature whose bit is set in the merged mask (an $O(R)$ operation
+  where $R$ is the number of registry entries, currently~11).  All
+  ranks produce the same result because they operate on identical
+  input.
+\item The derived effective version and merged bitmask are written to
+  \texttt{CGNSMinRequiredVersion\_t}
+  (Alternative~B), \texttt{CGNSLibraryVersion\_t} (always the current
+  library version), and \texttt{\_CGNS\_FeatureMask}, and the file is
   closed normally.
 \end{enumerate}
 
